@@ -6,7 +6,7 @@ This project explores how humans learn through experimentation and observation.
 ## Repos
 Here are the repositories involved in this project:
 - [Experiment Code](https://github.com/martinezjulio/AsteroidMiningGame): Code for running the multi-armed bandit experiment.
-- [Analysis Code](https://github.com/martinezjulio/social-transfer-bandits-analyis): Data analysis, figures and results.
+- [Analysis Code](https://github.com/martinezjulio/social-transfer-bandits-analysis): Data analysis, figures and results.
 - [Modeling Code](https://github.com/martinezjulio/social-transfer-bandits-modeling): Modeling humans on social transfer learning in multiarmed bandits experiment.
 
 ## Project Board
