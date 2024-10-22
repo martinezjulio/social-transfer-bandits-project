@@ -24,14 +24,19 @@
     .error-bar {
       stroke-width: 1.5px;
     }
+    .facet-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 columns for 3 game sequences */
+      gap: 20px;
+    }
     .facet {
-      margin: 20px;
+      margin: 10px;
     }
   </style>
 </head>
 <body>
   <h2>Simulated/Modeled Reward (Mean and SE)</h2>
-  <div id="facets"></div> <!-- Div to hold the grid of plots -->
+  <div id="facets" class="facet-grid"></div> <!-- Div to hold the grid of plots -->
 
   <script>
     d3.csv("https://raw.githubusercontent.com/martinezjulio/social-transfer-bandits-project/main/simulation_results_0.csv")
@@ -69,7 +74,6 @@
 
         const nestedData = d3.group(flattenedData, d => d.transfer, d => d.game_sequence);
 
-        // Set up dimensions for each plot
         const margin = { top: 30, right: 20, bottom: 30, left: 40 },
               width = 400 - margin.left - margin.right,
               height = 300 - margin.top - margin.bottom;
@@ -137,7 +141,6 @@
                .attr("y", -10)
                .attr("text-anchor", "middle")
                .text(`Transfer: ${transfer}, Sequence: ${game_sequence}`);
-
           });
         });
 
