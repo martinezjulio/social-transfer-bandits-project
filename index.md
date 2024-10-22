@@ -15,6 +15,9 @@ Here are the repositories involved in this project:
 ## Project Board
 [GitHub Project Board](https://github.com/users/martinezjulio/projects/4).
 
+## Simulated Data Results
+[Simulated Rewards Plot](simulation-plot.html)
+
 ## Contact
 Julio Martinez
 
