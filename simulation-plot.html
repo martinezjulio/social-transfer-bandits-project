@@ -1,136 +1,165 @@
-d3.csv("https://raw.githubusercontent.com/martinezjulio/social-transfer-bandits-project/main/simulation_results_0.csv")
-  .then(function(rawData) {
-    // Step 1: Summarize the data
-    const dataSummary = d3.rollup(
-      rawData,
-      v => ({
-        mean_reward: d3.mean(v, d => +d.game_total_reward),
-        se_reward: d3.deviation(v, d => +d.game_total_reward) / Math.sqrt(v.length)
-      }),
-      d => d.transfer,
-      d => d.teacher,
-      d => d.game_sequence,
-      d => +d.block_index
-    );
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulated Rewards Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .axis-label {
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .legend {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .line {
+      fill: none;
+      stroke-width: 2px;
+    }
+    .error-bar {
+      stroke-width: 1.5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Simulated/Modeled Reward (Mean and SE)</h2>
+  <svg width="800" height="500"></svg>
 
-    console.log([...dataSummary]);  // Inspect the summarized data
+  <script>
+    d3.csv("https://raw.githubusercontent.com/martinezjulio/social-transfer-bandits-project/main/simulation_results_0.csv")
+      .then(function(rawData) {
+        const dataSummary = d3.rollup(
+          rawData,
+          v => ({
+            mean_reward: d3.mean(v, d => +d.game_total_reward),
+            se_reward: d3.deviation(v, d => +d.game_total_reward) / Math.sqrt(v.length)
+          }),
+          d => d.transfer,
+          d => d.teacher,
+          d => d.game_sequence,
+          d => +d.block_index
+        );
 
-    // Step 2: Flatten the nested data into a usable format
-    const flattenedData = [];
-    dataSummary.forEach((transferValue, transfer) => {
-      transferValue.forEach((teacherValue, teacher) => {
-        teacherValue.forEach((sequenceValue, game_sequence) => {
-          sequenceValue.forEach((stats, block_index) => {
-            flattenedData.push({
-              transfer,
-              teacher,
-              game_sequence,
-              block_index_mapped: mapBlockIndex(game_sequence, block_index),
-              mean_reward: stats.mean_reward,
-              se_reward: stats.se_reward
+        const flattenedData = [];
+        dataSummary.forEach((transferValue, transfer) => {
+          transferValue.forEach((teacherValue, teacher) => {
+            teacherValue.forEach((sequenceValue, game_sequence) => {
+              sequenceValue.forEach((stats, block_index) => {
+                flattenedData.push({
+                  transfer,
+                  teacher,
+                  game_sequence,
+                  block_index_mapped: mapBlockIndex(game_sequence, block_index),
+                  mean_reward: stats.mean_reward,
+                  se_reward: stats.se_reward
+                });
+              });
             });
           });
         });
+
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 },
+              width = 800 - margin.left - margin.right,
+              height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+                      .attr("width", width + margin.left + margin.right)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("g")
+                      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleLinear()
+                    .domain([24, 76])
+                    .range([0, width]);
+
+        const y = d3.scaleLinear()
+                    .domain([0, d3.max(flattenedData, d => d.mean_reward + d.se_reward)])
+                    .nice()
+                    .range([height, 0]);
+
+        const color = d3.scaleOrdinal()
+                        .domain(["expert", "novice", "none"])
+                        .range(["blue", "red", "green"]);
+
+        svg.append("g")
+           .attr("transform", `translate(0,${height})`)
+           .call(d3.axisBottom(x).tickValues([24, 48, 52, 76]));
+
+        svg.append("g").call(d3.axisLeft(y));
+
+        const line = d3.line()
+                       .x(d => x(d.block_index_mapped))
+                       .y(d => y(d.mean_reward));
+
+        const teachers = Array.from(new Set(flattenedData.map(d => d.teacher)));
+
+        teachers.forEach(teacher => {
+          const teacherData = flattenedData.filter(d => d.teacher === teacher);
+
+          svg.append("path")
+             .datum(teacherData)
+             .attr("class", "line")
+             .attr("d", line)
+             .attr("stroke", color(teacher));
+        });
+
+        svg.selectAll(".error-bar")
+           .data(flattenedData)
+           .enter()
+           .append("line")
+           .attr("class", "error-bar")
+           .attr("x1", d => x(d.block_index_mapped))
+           .attr("x2", d => x(d.block_index_mapped))
+           .attr("y1", d => y(d.mean_reward - d.se_reward))
+           .attr("y2", d => y(d.mean_reward + d.se_reward))
+           .attr("stroke", "black");
+
+        svg.append("text")
+           .attr("class", "axis-label")
+           .attr("x", width / 2)
+           .attr("y", height + margin.bottom - 10)
+           .attr("text-anchor", "middle")
+           .text("Number of Trials (Shots)");
+
+        svg.append("text")
+           .attr("class", "axis-label")
+           .attr("x", -height / 2)
+           .attr("y", -margin.left + 10)
+           .attr("text-anchor", "middle")
+           .attr("transform", "rotate(-90)")
+           .text("Mean Total Reward");
+
+        const legend = svg.selectAll(".legend")
+                          .data(teachers)
+                          .enter().append("g")
+                          .attr("class", "legend")
+                          .attr("transform", (d, i) => `translate(${width - 100},${i * 20})`);
+
+        legend.append("rect")
+              .attr("x", 0)
+              .attr("y", 0)
+              .attr("width", 10)
+              .attr("height", 10)
+              .attr("fill", color);
+
+        legend.append("text")
+              .attr("x", 15)
+              .attr("y", 10)
+              .text(d => d);
       });
-    });
 
-    console.log(flattenedData);  // Check the flattened data
-
-    // Step 3: Continue with the D3 plotting logic
-    const margin = { top: 50, right: 50, bottom: 50, left: 50 },
-          width = 800 - margin.left - margin.right,
-          height = 500 - margin.top - margin.bottom;
-
-    const svg = d3.select("svg")
-                  .attr("width", width + margin.left + margin.right)
-                  .attr("height", height + margin.top + margin.bottom)
-                  .append("g")
-                  .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    const x = d3.scaleLinear()
-                .domain([24, 76])
-                .range([0, width]);
-
-    const y = d3.scaleLinear()
-                .domain([0, d3.max(flattenedData, d => d.mean_reward + d.se_reward)])
-                .nice()
-                .range([height, 0]);
-
-    const color = d3.scaleOrdinal()
-                    .domain(["expert", "novice", "none"])
-                    .range(["blue", "red", "green"]);
-
-    svg.append("g")
-       .attr("transform", `translate(0,${height})`)
-       .call(d3.axisBottom(x).tickValues([24, 48, 52, 76]));
-
-    svg.append("g").call(d3.axisLeft(y));
-
-    const line = d3.line()
-                   .x(d => x(d.block_index_mapped))
-                   .y(d => y(d.mean_reward));
-
-    const teachers = Array.from(new Set(flattenedData.map(d => d.teacher)));
-
-    teachers.forEach(teacher => {
-      const teacherData = flattenedData.filter(d => d.teacher === teacher);
-
-      svg.append("path")
-         .datum(teacherData)
-         .attr("class", "line")
-         .attr("d", line)
-         .attr("stroke", color(teacher));
-    });
-
-    svg.selectAll(".error-bar")
-       .data(flattenedData)
-       .enter()
-       .append("line")
-       .attr("class", "error-bar")
-       .attr("x1", d => x(d.block_index_mapped))
-       .attr("x2", d => x(d.block_index_mapped))
-       .attr("y1", d => y(d.mean_reward - d.se_reward))
-       .attr("y2", d => y(d.mean_reward + d.se_reward))
-       .attr("stroke", "black");
-
-    svg.append("text")
-       .attr("class", "axis-label")
-       .attr("x", width / 2)
-       .attr("y", height + margin.bottom - 10)
-       .attr("text-anchor", "middle")
-       .text("Number of Trials (Shots)");
-
-    svg.append("text")
-       .attr("class", "axis-label")
-       .attr("x", -height / 2)
-       .attr("y", -margin.left + 10)
-       .attr("text-anchor", "middle")
-       .attr("transform", "rotate(-90)")
-       .text("Mean Total Reward");
-
-    const legend = svg.selectAll(".legend")
-                      .data(teachers)
-                      .enter().append("g")
-                      .attr("class", "legend")
-                      .attr("transform", (d, i) => `translate(${width - 100},${i * 20})`);
-
-    legend.append("rect")
-          .attr("x", 0)
-          .attr("y", 0)
-          .attr("width", 10)
-          .attr("height", 10)
-          .attr("fill", color);
-
-    legend.append("text")
-          .attr("x", 15)
-          .attr("y", 10)
-          .text(d => d);
-  });
-
-function mapBlockIndex(game_sequence, block_index) {
-  if (game_sequence === "play-play-play") {
-    return block_index * 24 + 24;
-  } else {
-    return [24, 48, 52, 76][block_index] || 76;
-  }
-}
+    function mapBlockIndex(game_sequence, block_index) {
+      if (game_sequence === "play-play-play") {
+        return block_index * 24 + 24;
+      } else {
+        return [24, 48, 52, 76][block_index] || 76;
+      }
+    }
+  </script>
+</body>
+</html>
