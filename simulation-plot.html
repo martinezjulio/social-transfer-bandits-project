@@ -31,112 +31,113 @@
   <svg width="800" height="500"></svg>
 
   <script>
-    // Load the data from your GitHub repo
-    d3.csv("https://raw.githubusercontent.com/username/repo/branch/pwip_simulation_results.csv").then(function(data) {
-      // Prepare the data
-      data.forEach(d => {
-        d.mean_reward = +d.mean_reward;
-        d.se_reward = +d.se_reward;
-        d.block_index_mapped = +d.block_index_mapped;
+    // Load the data from your GitHub raw URL
+    d3.csv("https://raw.githubusercontent.com/martinezjulio/social-transfer-bandits-project/main/simulation_results_0.csv")
+      .then(function(data) {
+        // Parse the data
+        data.forEach(d => {
+          d.mean_reward = +d.mean_reward;
+          d.se_reward = +d.se_reward;
+          d.block_index_mapped = +d.block_index_mapped;
+        });
+
+        // Set margins and dimensions
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 },
+              width = 800 - margin.left - margin.right,
+              height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+                      .attr("width", width + margin.left + margin.right)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("g")
+                      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Create scales
+        const x = d3.scaleLinear()
+                    .domain([24, 76])
+                    .range([0, width]);
+
+        const y = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d.mean_reward + d.se_reward)])
+                    .nice()
+                    .range([height, 0]);
+
+        const color = d3.scaleOrdinal()
+                        .domain(["expert", "novice", "none"])
+                        .range(["blue", "red", "green"]);
+
+        // Create axes
+        svg.append("g")
+           .attr("transform", `translate(0,${height})`)
+           .call(d3.axisBottom(x).tickValues([24, 48, 52, 76]));
+
+        svg.append("g")
+           .call(d3.axisLeft(y));
+
+        // Add lines
+        const line = d3.line()
+                       .x(d => x(d.block_index_mapped))
+                       .y(d => y(d.mean_reward));
+
+        const teachers = Array.from(new Set(data.map(d => d.teacher)));
+
+        teachers.forEach(teacher => {
+          const teacherData = data.filter(d => d.teacher === teacher);
+
+          svg.append("path")
+             .datum(teacherData)
+             .attr("class", "line")
+             .attr("d", line)
+             .attr("stroke", color(teacher));
+        });
+
+        // Add error bars
+        svg.selectAll(".error-bar")
+           .data(data)
+           .enter()
+           .append("line")
+           .attr("class", "error-bar")
+           .attr("x1", d => x(d.block_index_mapped))
+           .attr("x2", d => x(d.block_index_mapped))
+           .attr("y1", d => y(d.mean_reward - d.se_reward))
+           .attr("y2", d => y(d.mean_reward + d.se_reward))
+           .attr("stroke", "black");
+
+        // Add labels
+        svg.append("text")
+           .attr("class", "axis-label")
+           .attr("x", width / 2)
+           .attr("y", height + margin.bottom - 10)
+           .attr("text-anchor", "middle")
+           .text("Number of Trials (Shots)");
+
+        svg.append("text")
+           .attr("class", "axis-label")
+           .attr("x", -height / 2)
+           .attr("y", -margin.left + 10)
+           .attr("text-anchor", "middle")
+           .attr("transform", "rotate(-90)")
+           .text("Mean Total Reward");
+
+        // Add legend
+        const legend = svg.selectAll(".legend")
+                          .data(teachers)
+                          .enter().append("g")
+                          .attr("class", "legend")
+                          .attr("transform", (d, i) => `translate(${width - 100},${i * 20})`);
+
+        legend.append("rect")
+              .attr("x", 0)
+              .attr("y", 0)
+              .attr("width", 10)
+              .attr("height", 10)
+              .attr("fill", color);
+
+        legend.append("text")
+              .attr("x", 15)
+              .attr("y", 10)
+              .text(d => d);
       });
-
-      // Set margins and dimensions
-      const margin = { top: 50, right: 50, bottom: 50, left: 50 },
-            width = 800 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom;
-
-      const svg = d3.select("svg")
-                    .attr("width", width + margin.left + margin.right)
-                    .attr("height", height + margin.top + margin.bottom)
-                    .append("g")
-                    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-      // Create scales
-      const x = d3.scaleLinear()
-                  .domain([24, 76])
-                  .range([0, width]);
-
-      const y = d3.scaleLinear()
-                  .domain([0, d3.max(data, d => d.mean_reward + d.se_reward)])
-                  .nice()
-                  .range([height, 0]);
-
-      const color = d3.scaleOrdinal()
-                      .domain(["expert", "novice", "none"])
-                      .range(["blue", "red", "green"]);
-
-      // Create axes
-      svg.append("g")
-         .attr("transform", `translate(0,${height})`)
-         .call(d3.axisBottom(x).tickValues([24, 48, 52, 76]));
-
-      svg.append("g")
-         .call(d3.axisLeft(y));
-
-      // Add lines
-      const line = d3.line()
-                     .x(d => x(d.block_index_mapped))
-                     .y(d => y(d.mean_reward));
-
-      const teachers = Array.from(new Set(data.map(d => d.teacher)));
-
-      teachers.forEach(teacher => {
-        const teacherData = data.filter(d => d.teacher === teacher);
-
-        svg.append("path")
-           .datum(teacherData)
-           .attr("class", "line")
-           .attr("d", line)
-           .attr("stroke", color(teacher));
-      });
-
-      // Add error bars
-      svg.selectAll(".error-bar")
-         .data(data)
-         .enter()
-         .append("line")
-         .attr("class", "error-bar")
-         .attr("x1", d => x(d.block_index_mapped))
-         .attr("x2", d => x(d.block_index_mapped))
-         .attr("y1", d => y(d.mean_reward - d.se_reward))
-         .attr("y2", d => y(d.mean_reward + d.se_reward))
-         .attr("stroke", "black");
-
-      // Add labels
-      svg.append("text")
-         .attr("class", "axis-label")
-         .attr("x", width / 2)
-         .attr("y", height + margin.bottom - 10)
-         .attr("text-anchor", "middle")
-         .text("Number of Trials (Shots)");
-
-      svg.append("text")
-         .attr("class", "axis-label")
-         .attr("x", -height / 2)
-         .attr("y", -margin.left + 10)
-         .attr("text-anchor", "middle")
-         .attr("transform", "rotate(-90)")
-         .text("Mean Total Reward");
-
-      // Add legend
-      const legend = svg.selectAll(".legend")
-                        .data(teachers)
-                        .enter().append("g")
-                        .attr("class", "legend")
-                        .attr("transform", (d, i) => `translate(${width - 100},${i * 20})`);
-
-      legend.append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("fill", color);
-
-      legend.append("text")
-            .attr("x", 15)
-            .attr("y", 10)
-            .text(d => d);
-    });
   </script>
 </body>
 </html>
