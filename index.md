@@ -9,6 +9,9 @@ Here are the repositories involved in this project:
 - [Analysis Code](https://github.com/martinezjulio/social-transfer-bandits-analysis): Data analysis, figures and results.
 - [Modeling Code](https://github.com/martinezjulio/social-transfer-bandits-modeling): Modeling humans on social transfer learning in multiarmed bandits experiment.
 
+## Pre-Registration
+[Pre-Registration Document](./pre-registration.md)
+
 ## Project Board
 [GitHub Project Board](https://github.com/users/martinezjulio/projects/4).
 
