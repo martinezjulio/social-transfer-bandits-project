@@ -1,1 +1,2 @@
-# social-transfer-bandits-project
+# Social Transfer Banadits Project
+https://martinezjulio.com/social-transfer-bandits-project/
