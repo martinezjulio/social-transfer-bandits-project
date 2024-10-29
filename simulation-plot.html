@@ -39,7 +39,7 @@
   <div id="facets" class="facet-grid"></div> <!-- Div to hold the grid of plots -->
 
   <script>
-    d3.csv("https://raw.githubusercontent.com/martinezjulio/social-transfer-bandits-project/main/simulation_results_0.csv")
+    d3.csv("https://storage.googleapis.com/cogsci-bucket/simulation_results_0.csv")
       .then(function(rawData) {
         // Summarize the data
         const dataSummary = d3.rollup(
